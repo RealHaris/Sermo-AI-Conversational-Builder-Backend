@@ -14,6 +14,7 @@ const statsRoute = require("./statsRoute");
 const eventStatusMappingRoute = require("./eventStatusMappingRoute");
 const salesOrderAuditLogRoute = require("./salesOrderAuditLogRoute");
 const cronSettingRoute = require("./cronSettingRoute");
+const vapiAssistantRoute = require("./vapiAssistantRoute");
 
 const router = express.Router();
 
@@ -77,6 +78,10 @@ const defaultRoutes = [
   {
     path: "/cron-settings",
     route: cronSettingRoute,
+  },
+  {
+    path: "/vapi-assistants",
+    route: vapiAssistantRoute,
   },
 ];
 

@@ -48,7 +48,10 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "winston": "^3.3.3",
-    "winston-daily-rotate-file": "^4.5.5"
+    "winston-daily-rotate-file": "^4.5.5",
+    "@vapi-ai/server-sdk": "^0.9.3",
+    "uuid": "^9.0.0",
+    "cloudinary": "^1.40.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.15.7",

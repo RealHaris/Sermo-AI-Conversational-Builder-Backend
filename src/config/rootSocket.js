@@ -1,4 +1,10 @@
+const vapiSocket = require('./vapiSocket');
+
 const rootSocket = (io) => {
+    // Initialize Vapi socket namespace
+    vapiSocket(io);
+
+    // General socket connections
     io.on('connection', (socket) => {
         console.log('New connection');
         socket.on('join-room', (room) => {
@@ -12,4 +18,5 @@ const rootSocket = (io) => {
     });
     return io;
 };
+
 module.exports = rootSocket;

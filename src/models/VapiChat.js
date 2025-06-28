@@ -1,25 +1,33 @@
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-    class VapiAssistant extends Model {
+    class VapiChat extends Model {
         /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
          * The `models/index` file will call this method automatically.
          */
         static associate(models) {
-            VapiAssistant.belongsTo(models.user, {
+            VapiChat.belongsTo(models.vapi_assistant, {
+                foreignKey: 'assistant_id',
+                as: 'assistant',
+            });
+            VapiChat.belongsTo(models.user, {
                 foreignKey: 'created_by',
                 as: 'creator',
             });
-            VapiAssistant.belongsTo(models.user, {
+            VapiChat.belongsTo(models.user, {
                 foreignKey: 'updated_by',
                 as: 'updater',
+            });
+            VapiChat.hasMany(models.vapi_message, {
+                foreignKey: 'chat_id',
+                as: 'messages',
             });
         }
     }
 
-    VapiAssistant.init(
+    VapiChat.init(
         {
             id: {
                 type: DataTypes.UUID,
@@ -30,18 +38,13 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.STRING,
                 allowNull: false,
             },
-            prompt: {
-                type: DataTypes.TEXT,
+            conversation_id: {
+                type: DataTypes.STRING,
                 allowNull: false,
             },
-            vapi_assistant_id: {
-                type: DataTypes.STRING,
-                allowNull: true, // Will be populated after creation in Vapi
-            },
-            config: {
-                type: DataTypes.JSON,
-                allowNull: true,
-                defaultValue: {},
+            assistant_id: {
+                type: DataTypes.UUID,
+                allowNull: false,
             },
             is_active: {
                 type: DataTypes.BOOLEAN,
@@ -64,9 +67,9 @@ module.exports = (sequelize, DataTypes) => {
         },
         {
             sequelize,
-            modelName: 'vapi_assistant',
+            modelName: 'vapi_chat',
             underscored: true,
         },
     );
-    return VapiAssistant;
+    return VapiChat;
 };
