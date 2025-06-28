@@ -1,73 +1,154 @@
+const httpStatus = require('http-status');
 const VapiService = require('../service/VapiService');
-const { responseHandler } = require('../helper/responseHandler');
 
 class VapiAssistantController {
-  async createAssistant(req, res, next) {
+  constructor() {
+    this.vapiService = new VapiService();
+  }
+
+  /**
+   * Create a new assistant
+   * @param {Object} req
+   * @param {Object} res
+   * @returns {Promise<Object>}
+   */
+  async createAssistant(req, res) {
     try {
       const { name, prompt } = req.body;
       const userId = req.user.id;
 
-      const assistant = await VapiService.createAssistant(name, prompt, userId);
-      return responseHandler.success(res, assistant);
+      const result = await this.vapiService.createAssistant(name, prompt, userId);
+      return res.status(result.statusCode).json(result.response);
     } catch (error) {
-      next(error);
+      return res.status(httpStatus.BAD_REQUEST).json({
+        code: httpStatus.BAD_REQUEST,
+        message: error.message,
+      });
     }
   }
 
-  async listAssistants(req, res, next) {
+  /**
+   * List all assistants for a user
+   * @param {Object} req
+   * @param {Object} res
+   * @returns {Promise<Object>}
+   */
+  async listAssistants(req, res) {
     try {
       const userId = req.user.id;
-      const assistants = await VapiService.listAssistants(userId);
-      return responseHandler.success(res, assistants);
+      const result = await this.vapiService.listAssistants(userId);
+      return res.status(result.statusCode).json(result.response);
     } catch (error) {
-      next(error);
+      return res.status(httpStatus.BAD_REQUEST).json({
+        code: httpStatus.BAD_REQUEST,
+        message: error.message,
+      });
     }
   }
 
-  async startConversation(req, res, next) {
+  /**
+   * Start a new chat with an assistant
+   * @param {Object} req
+   * @param {Object} res
+   * @returns {Promise<Object>}
+   */
+  async startChat(req, res) {
     try {
       const { assistantId, message } = req.body;
-      const conversation = await VapiService.startConversation(assistantId, message);
-      return responseHandler.success(res, conversation);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async sendMessage(req, res, next) {
-    try {
-      const { conversationId, message } = req.body;
-      const response = await VapiService.sendMessage(conversationId, message);
-      return responseHandler.success(res, response);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async updateAssistant(req, res, next) {
-    try {
-      const { assistantId } = req.params;
-      const updates = req.body;
       const userId = req.user.id;
-
-      const assistant = await VapiService.updateAssistant(assistantId, updates, userId);
-      return responseHandler.success(res, assistant);
+      const result = await this.vapiService.startChat(assistantId, message, userId);
+      return res.status(result.statusCode).json(result.response);
     } catch (error) {
-      next(error);
+      return res.status(httpStatus.BAD_REQUEST).json({
+        code: httpStatus.BAD_REQUEST,
+        message: error.message,
+      });
     }
   }
 
-  async deleteAssistant(req, res, next) {
+  /**
+   * Send a voice message in a chat
+   * @param {Object} req
+   * @param {Object} res
+   * @returns {Promise<Object>}
+   */
+  async sendVoiceMessage(req, res) {
     try {
-      const { assistantId } = req.params;
+      const { chatId } = req.params;
+      const audioBuffer = req.file.buffer;
       const userId = req.user.id;
-
-      const result = await VapiService.deleteAssistant(assistantId, userId);
-      return responseHandler.success(res, result);
+      const result = await this.vapiService.sendVoiceMessage(chatId, audioBuffer, userId);
+      return res.status(result.statusCode).json(result.response);
     } catch (error) {
-      next(error);
+      return res.status(httpStatus.BAD_REQUEST).json({
+        code: httpStatus.BAD_REQUEST,
+        message: error.message,
+      });
+    }
+  }
+
+  /**
+   * Rename an existing chat
+   * @param {Object} req
+   * @param {Object} res
+   * @returns {Promise<Object>}
+   */
+  async renameChat(req, res) {
+    try {
+      const { chatId } = req.params;
+      const { name } = req.body;
+      const userId = req.user.id;
+      const result = await this.vapiService.renameChat(chatId, name, userId);
+      return res.status(result.statusCode).json(result.response);
+    } catch (error) {
+      return res.status(httpStatus.BAD_REQUEST).json({
+        code: httpStatus.BAD_REQUEST,
+        message: error.message,
+      });
+    }
+  }
+
+  /**
+   * Get chat history
+   * @param {Object} req
+   * @param {Object} res
+   * @returns {Promise<Object>}
+   */
+  async getChatHistory(req, res) {
+    try {
+      const { chatId } = req.params;
+      const result = await this.vapiService.getChatHistory(chatId);
+      return res.status(result.statusCode).json(result.response);
+    } catch (error) {
+      return res.status(httpStatus.BAD_REQUEST).json({
+        code: httpStatus.BAD_REQUEST,
+        message: error.message,
+      });
+    }
+  }
+
+  /**
+   * Delete a message
+   * @param {Object} req
+   * @param {Object} res
+   * @returns {Promise<Object>}
+   */
+  async deleteMessage(req, res) {
+    try {
+      const { messageId } = req.params;
+      const userId = req.user.id;
+      const result = await this.vapiService.deleteMessage(messageId, userId);
+      return res.status(result.statusCode).json(result.response);
+    } catch (error) {
+      return res.status(httpStatus.BAD_REQUEST).json({
+        code: httpStatus.BAD_REQUEST,
+        message: error.message,
+      });
     }
   }
 }
 
-module.exports = new VapiAssistantController(); 
+module.exports = VapiAssistantController;
+
+
+// module.exports = new VapiAssistantController(); 

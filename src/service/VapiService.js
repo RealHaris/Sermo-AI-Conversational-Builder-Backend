@@ -1,15 +1,18 @@
 const { VapiClient } = require('@vapi-ai/server-sdk');
+const httpStatus = require('http-status');
 const config = require('../config/config');
-const db = require('../models');
-const ApiError = require('../helper/ApiError');
+const VapiDao = require('../dao/VapiDao');
 const CloudinaryService = require('./CloudinaryService');
 const { v4: uuidv4 } = require('uuid');
+const responseHandler = require('../helper/responseHandler');
+const logger = require('../config/logger');
 
 class VapiService {
   constructor() {
     this.vapi = new VapiClient({
       apiKey: config.vapi.apiKey,
     });
+    this.vapiDao = new VapiDao();
   }
 
   async createAssistant(name, prompt, userId) {
@@ -29,8 +32,8 @@ class VapiService {
         },
       });
 
-      // Store in our database
-      const assistant = await db.vapi_assistant.create({
+      // Store in our database using DAO
+      const assistant = await this.vapiDao.createAssistant({
         name,
         prompt,
         vapi_assistant_id: vapiAssistant.id,
@@ -38,30 +41,57 @@ class VapiService {
         updated_by: userId,
       });
 
-      return assistant;
+      return responseHandler.returnSuccess(
+        httpStatus.CREATED,
+        'Assistant created successfully',
+        assistant
+      );
     } catch (error) {
-      throw new ApiError(error.message, 500);
+      logger.error(error);
+      return responseHandler.returnError(
+        httpStatus.BAD_REQUEST,
+        error.message || 'Failed to create assistant'
+      );
+    }
+  }
+
+  async listAssistants(userId) {
+    try {
+      const assistants = await this.vapiDao.listAssistants(userId);
+      return responseHandler.returnSuccess(
+        httpStatus.OK,
+        'Assistants retrieved successfully',
+        assistants
+      );
+    } catch (error) {
+      logger.error(error);
+      return responseHandler.returnError(
+        httpStatus.BAD_REQUEST,
+        error.message || 'Failed to list assistants'
+      );
     }
   }
 
   async startChat(assistantId, initialMessage, userId) {
     try {
-      const assistant = await db.vapi_assistant.findByPk(assistantId);
+      const assistant = await this.vapiDao.findAssistantById(assistantId);
       if (!assistant) {
-        throw new ApiError('Assistant not found', 404);
+        return responseHandler.returnError(
+          httpStatus.NOT_FOUND,
+          'Assistant not found'
+        );
       }
 
       // Create chat in Vapi
       const chat = await this.vapi.chats.create({
         assistantId: assistant.vapi_assistant_id,
-        // Initial message will be sent separately
       });
 
       // Auto-generate chat name from first message
       const chatName = await this._generateChatName(initialMessage, assistant.vapi_assistant_id);
 
-      // Store chat details in our database
-      const vapiChat = await db.vapi_chat.create({
+      // Store chat details using DAO
+      const vapiChat = await this.vapiDao.createChat({
         name: chatName,
         conversation_id: chat.id,
         assistant_id: assistantId,
@@ -77,38 +107,60 @@ class VapiService {
         });
       }
 
-      return {
-        ...vapiChat.toJSON(),
-        firstResponse: firstResponse
-      };
+      return responseHandler.returnSuccess(
+        httpStatus.CREATED,
+        'Chat started successfully',
+        {
+          ...vapiChat.toJSON(),
+          firstResponse: firstResponse
+        }
+      );
     } catch (error) {
-      throw new ApiError(error.message, 500);
+      logger.error(error);
+      return responseHandler.returnError(
+        httpStatus.BAD_REQUEST,
+        error.message || 'Failed to start chat'
+      );
     }
   }
 
   async renameChat(chatId, newName, userId) {
     try {
-      const chat = await db.vapi_chat.findByPk(chatId);
+      const chat = await this.vapiDao.findChatById(chatId);
       if (!chat) {
-        throw new ApiError('Chat not found', 404);
+        return responseHandler.returnError(
+          httpStatus.NOT_FOUND,
+          'Chat not found'
+        );
       }
 
-      await chat.update({
+      await this.vapiDao.updateChat(chatId, {
         name: newName,
         updated_by: userId
       });
 
-      return chat;
+      return responseHandler.returnSuccess(
+        httpStatus.OK,
+        'Chat renamed successfully',
+        { chatId, newName }
+      );
     } catch (error) {
-      throw new ApiError(error.message, 500);
+      logger.error(error);
+      return responseHandler.returnError(
+        httpStatus.BAD_REQUEST,
+        error.message || 'Failed to rename chat'
+      );
     }
   }
 
   async sendVoiceMessage(chatId, audioBuffer, userId) {
     try {
-      const chat = await db.vapi_chat.findByPk(chatId);
+      const chat = await this.vapiDao.findChatById(chatId);
       if (!chat) {
-        throw new ApiError('Chat not found', 404);
+        return responseHandler.returnError(
+          httpStatus.NOT_FOUND,
+          'Chat not found'
+        );
       }
 
       // Upload user's voice note to Cloudinary
@@ -119,15 +171,13 @@ class VapiService {
         userAudioPublicId
       );
 
-      // TODO: Implement audio message handling with Vapi SDK
-      // For now, this is a placeholder as the exact API for voice messages needs verification
+      // Send to Vapi
       const response = await this.vapi.chats.createResponse(chat.conversation_id, {
         audio: audioBuffer,
-        // The exact API structure needs to be verified with Vapi documentation
       });
 
-      // Store user's message
-      const userMessage = await db.vapi_message.create({
+      // Store user's message using DAO
+      const userMessage = await this.vapiDao.createMessage({
         chat_id: chatId,
         role: 'user',
         content: response.transcript || '',
@@ -138,8 +188,9 @@ class VapiService {
       });
 
       // Store assistant's response if available
+      let assistantMessage = null;
       if (response.content) {
-        const assistantMessage = await db.vapi_message.create({
+        assistantMessage = await this.vapiDao.createMessage({
           chat_id: chatId,
           role: 'assistant',
           content: response.content,
@@ -147,27 +198,29 @@ class VapiService {
           audio_type: 'assistant_response',
           created_by: userId
         });
-
-        return {
-          text: response.content,
-          audioUrl: response.audioUrl,
-          messageId: assistantMessage.id
-        };
       }
 
-      return {
-        text: '',
-        audioUrl: userAudioUrl,
-        messageId: userMessage.id
-      };
+      return responseHandler.returnSuccess(
+        httpStatus.OK,
+        'Voice message sent successfully',
+        {
+          text: response.content || '',
+          audioUrl: response.audioUrl || userAudioUrl,
+          messageId: assistantMessage ? assistantMessage.id : userMessage.id
+        }
+      );
     } catch (error) {
-      throw new ApiError(error.message, 500);
+      logger.error(error);
+      return responseHandler.returnError(
+        httpStatus.BAD_REQUEST,
+        error.message || 'Failed to send voice message'
+      );
     }
   }
 
   async startVoiceStream(chatId, userId, responseCallback) {
     try {
-      const chat = await db.vapi_chat.findByPk(chatId);
+      const chat = await this.vapiDao.findChatById(chatId);
       if (!chat) {
         throw new ApiError('Chat not found', 404);
       }
@@ -183,14 +236,48 @@ class VapiService {
 
   async getChatHistory(chatId) {
     try {
-      const messages = await db.vapi_message.findAll({
-        where: { chat_id: chatId },
-        order: [['created_at', 'ASC']]
-      });
-
-      return messages;
+      const messages = await this.vapiDao.findMessagesByChatId(chatId);
+      return responseHandler.returnSuccess(
+        httpStatus.OK,
+        'Chat history retrieved successfully',
+        messages
+      );
     } catch (error) {
-      throw new ApiError(error.message, 500);
+      logger.error(error);
+      return responseHandler.returnError(
+        httpStatus.BAD_REQUEST,
+        error.message || 'Failed to get chat history'
+      );
+    }
+  }
+
+  async deleteMessage(messageId, userId) {
+    try {
+      const message = await this.vapiDao.findMessageById(messageId);
+      if (!message) {
+        return responseHandler.returnError(
+          httpStatus.NOT_FOUND,
+          'Message not found'
+        );
+      }
+
+      // Delete audio from Cloudinary if exists
+      if (message.cloudinary_public_id) {
+        await CloudinaryService.deleteFile(message.cloudinary_public_id);
+      }
+
+      await this.vapiDao.deleteMessage(messageId);
+      return responseHandler.returnSuccess(
+        httpStatus.OK,
+        'Message deleted successfully',
+        { success: true }
+      );
+    } catch (error) {
+      logger.error(error);
+      return responseHandler.returnError(
+        httpStatus.BAD_REQUEST,
+        error.message || 'Failed to delete message'
+      );
     }
   }
 
@@ -202,29 +289,11 @@ class VapiService {
       const timestamp = new Date().toLocaleString();
       return `Chat ${timestamp}`;
     } catch (error) {
-      console.error('Error generating chat name:', error);
+      logger.error('Error generating chat name:', error);
       return 'New Chat';
-    }
-  }
-
-  async deleteMessage(messageId, userId) {
-    try {
-      const message = await db.vapi_message.findByPk(messageId);
-      if (!message) {
-        throw new ApiError('Message not found', 404);
-      }
-
-      // Delete audio from Cloudinary if exists
-      if (message.cloudinary_public_id) {
-        await CloudinaryService.deleteFile(message.cloudinary_public_id);
-      }
-
-      await message.destroy();
-      return { success: true };
-    } catch (error) {
-      throw new ApiError(error.message, 500);
     }
   }
 }
 
-module.exports = new VapiService(); 
+// Export the class instead of an instance
+module.exports = VapiService; 

@@ -23,7 +23,9 @@
   "license": "MIT",
   "private": true,
   "dependencies": {
+    "@vapi-ai/server-sdk": "^0.9.3",
     "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.40.0",
     "cors": "^2.8.5",
     "cross-env": "^7.0.3",
     "crypto": "^1.0.1",
@@ -37,6 +39,7 @@
     "jsonwebtoken": "^8.5.1",
     "md5": "^2.3.0",
     "moment": "^2.29.2",
+    "multer": "^2.0.1",
     "mysql2": "^2.3.3",
     "node-cron": "^3.0.0",
     "passport": "^0.5.2",
@@ -47,11 +50,9 @@
     "socket.io": "^4.4.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "winston": "^3.3.3",
-    "winston-daily-rotate-file": "^4.5.5",
-    "@vapi-ai/server-sdk": "^0.9.3",
     "uuid": "^9.0.0",
-    "cloudinary": "^1.40.0"
+    "winston": "^3.3.3",
+    "winston-daily-rotate-file": "^4.5.5"
   },
   "devDependencies": {
     "@babel/cli": "^7.15.7",
