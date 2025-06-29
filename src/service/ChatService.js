@@ -362,15 +362,16 @@ class ChatService {
 
             try {
                 // Send message to Vapi
-                const vapiResponse = await this.vapiService.createChat({
-                    previousChatId: chat.vapi_chat_id,
-                    message: messageData.content
-                });
+                const messagePayload = {
+                    role: 'user',
+                    content: messageData.content
+                };
+                const vapiResponse = await this.vapiService.sendMessage(chat.vapi_chat_id, messagePayload);
 
                 // Update chat metadata
                 await this.chatDao.updateWhere(
                     {
-                        message_count: vapiResponse.messages ? vapiResponse.messages.length : chat.message_count + 1,
+                        message_count: chat.message_count + 1,
                         last_message_at: new Date()
                     },
                     { uuid: chatId }
@@ -380,7 +381,7 @@ class ChatService {
                     httpStatus.OK,
                     'Message sent successfully',
                     {
-                        messages: vapiResponse.messages || [],
+                        message: vapiResponse,
                         chat_id: chatId
                     }
                 );

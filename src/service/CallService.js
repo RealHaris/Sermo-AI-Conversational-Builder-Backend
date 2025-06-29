@@ -561,6 +561,9 @@ class CallService {
                     if (webhookData.call?.transcript) {
                         updateData.transcript = webhookData.call.transcript;
                     }
+                    if (webhookData.call?.endReason) {
+                        updateData.end_reason = webhookData.call.endReason;
+                    }
                     break;
 
                 case 'end-of-call-report':

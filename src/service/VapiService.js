@@ -211,6 +211,23 @@ class VapiService {
     }
 
     /**
+     * Send message to chat
+     * @param {String} chatId
+     * @param {Object} message
+     * @returns {Object}
+     */
+    async sendMessage(chatId, message) {
+        try {
+            const response = await this.client.post(`/chat/${chatId}/message`, message);
+            logger.info(`Message sent to Vapi chat: ${chatId}`);
+            return response.data;
+        } catch (error) {
+            logger.error(`Failed to send message to Vapi chat ${chatId}:`, error.response?.data || error.message);
+            throw new Error(`Vapi send message failed: ${error.response?.data?.message || error.message}`);
+        }
+    }
+
+    /**
      * Send background message to chat (for voice message context)
      * @param {String} chatId
      * @param {Object} message
@@ -248,9 +265,13 @@ class VapiService {
      */
     validateWebhookSignature(payload, signature, secret) {
         try {
+            if (!secret) {
+                logger.error('Webhook secret is not configured for signature validation.');
+                return false;
+            }
             const crypto = require('crypto');
             const expectedSignature = crypto
-                .createHmac('sha256', secret || this.apiKey)
+                .createHmac('sha256', secret)
                 .update(payload)
                 .digest('hex');
 

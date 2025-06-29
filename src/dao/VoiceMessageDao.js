@@ -2,7 +2,7 @@ const SuperDao = require('./SuperDao');
 const models = require('../models');
 const { Sequelize } = require('sequelize');
 
-const VoiceMessage = models.voice_message;
+const VoiceMessage = models.vapi_voice_message;
 
 class VoiceMessageDao extends SuperDao {
     constructor() {

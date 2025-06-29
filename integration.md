@@ -89,7 +89,7 @@ The backend creates a **single conversation thread** in Vapi Chat that includes:
       "content": "[Voice message: https://cloudinary.com/audio.wav]"
     },
     { "role": "user", "content": "Can you help me with billing?" },
-    { "role": "system", "content": "[Voice Call Started - Duration: 2m 30s]" },
+    { "role": "system", "content": "[Voice Call Started]" },
     {
       "role": "system",
       "content": "[Call Transcript - user]: I want to cancel my subscription"
@@ -97,6 +97,10 @@ The backend creates a **single conversation thread** in Vapi Chat that includes:
     {
       "role": "system",
       "content": "[Call Transcript - assistant]: I can help you with that..."
+    },
+    {
+      "role": "system",
+      "content": "[Voice Call Ended - Duration: 2m 30s, Reason: hang-up]"
     }
   ]
 }
@@ -109,7 +113,7 @@ The backend creates a **single conversation thread** in Vapi Chat that includes:
 - **Assistant configurations** and local references
 - **Chat metadata** (names, timestamps, message counts)
 - **Voice message metadata** (Cloudinary URLs, durations)
-- **Call records** (duration, recording URLs, transcripts)
+- **Call records** (duration, recording URLs, transcripts, end reasons)
 - **User management** (if adding authentication)
 
 **Database is NOT used for:**
@@ -159,10 +163,10 @@ Your React app will:
 
 ## 🔧 **Next Steps**
 
-1. **Set up environment** (MySQL, Cloudinary, Vapi keys)
-2. **Run backend** - APIs will be immediately available
-3. **Integrate React** using provided examples
-4. **Add real transcription** service (Deepgram/Assembly AI)
-5. **Configure webhooks** in Vapi Dashboard
+1. **Set up environment** in your `.env` file (MySQL, Cloudinary, Vapi keys, and your public `APP_URL`).
+2. **Run backend** - APIs will be immediately available.
+3. **Webhooks are now auto-configured!** The backend automatically tells Vapi where to send webhooks using your `APP_URL`. No manual Vapi dashboard setup is needed.
+4. **Integrate React** using provided examples.
+5. **Add real transcription** service (Deepgram/AssemblyAI).
 
 This architecture provides a **production-ready foundation** that correctly leverages Vapi while giving you complete control over the user experience and unified chat history! 🚀

@@ -2,8 +2,8 @@ const SuperDao = require('./SuperDao');
 const models = require('../models');
 const { Sequelize } = require('sequelize');
 
-const Chat = models.chat;
-const Assistant = models.assistant;
+const Chat = models.vapi_chat;
+const Assistant = models.vapi_assistant;
 const User = models.user;
 
 class ChatDao extends SuperDao {
@@ -203,8 +203,8 @@ class ChatDao extends SuperDao {
 
         // Get related statistics
         const [messageCount, voiceMessageCount] = await Promise.all([
-            models.message?.count({ where: { chat_id: chatId, is_deleted: false } }) || 0,
-            models.voice_message?.count({ where: { chat_id: chatId, is_deleted: false } }) || 0
+            models.vapi_message?.count({ where: { chat_id: chatId, is_deleted: false } }) || 0,
+            models.vapi_voice_message?.count({ where: { chat_id: chatId, is_deleted: false } }) || 0
         ]);
 
         // Calculate chat duration (approximate based on first and last message)

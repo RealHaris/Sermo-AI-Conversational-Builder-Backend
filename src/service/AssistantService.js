@@ -7,6 +7,7 @@ const responseHandler = require('../helper/responseHandler');
 const logger = require('../config/logger');
 const models = require('../models');
 const VapiService = require('./VapiService');
+const config = require('../config/config');
 
 class AssistantService {
     constructor() {
@@ -61,6 +62,11 @@ class AssistantService {
                 maxDurationSeconds: assistantBody.max_duration || 1800, // 30 minutes
                 backgroundSound: assistantBody.background_sound || 'off'
             };
+
+            if (config.app.url && config.vapi.webhookSecret) {
+                vapiConfig.serverUrl = `${config.app.url}/api/webhooks/vapi`;
+                vapiConfig.serverUrlSecret = config.vapi.webhookSecret;
+            }
 
             try {
                 // Create assistant in Vapi
@@ -194,6 +200,10 @@ class AssistantService {
                 // If Vapi-related fields are being updated, update in Vapi as well
                 if (this.hasVapiFields(updateBody) && assistant.vapi_assistant_id) {
                     const vapiUpdateConfig = this.buildVapiUpdateConfig(updateBody, assistant);
+                    if (config.app.url && config.vapi.webhookSecret) {
+                        vapiUpdateConfig.serverUrl = `${config.app.url}/api/webhooks/vapi`;
+                        vapiUpdateConfig.serverUrlSecret = config.vapi.webhookSecret;
+                    }
                     await this.vapiService.updateAssistant(assistant.vapi_assistant_id, vapiUpdateConfig);
                 }
 

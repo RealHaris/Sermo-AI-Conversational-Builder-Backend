@@ -2,7 +2,7 @@ const SuperDao = require('./SuperDao');
 const models = require('../models');
 const { Sequelize } = require('sequelize');
 
-const Assistant = models.assistant;
+const Assistant = models.vapi_assistant;
 
 class AssistantDao extends SuperDao {
     constructor() {
@@ -115,8 +115,8 @@ class AssistantDao extends SuperDao {
 
         // Get related stats from other tables
         const [chatCount, callCount] = await Promise.all([
-            models.chat?.count({ where: { assistant_id: assistantId, is_deleted: false } }) || 0,
-            models.call?.count({ where: { assistant_id: assistantId, is_deleted: false } }) || 0
+            models.vapi_chat?.count({ where: { assistant_id: assistantId, is_deleted: false } }) || 0,
+            models.vapi_call?.count({ where: { assistant_id: assistantId, is_deleted: false } }) || 0
         ]);
 
         return {
@@ -170,7 +170,7 @@ class AssistantDao extends SuperDao {
             },
             include: [
                 {
-                    model: models.chat,
+                    model: models.vapi_chat,
                     as: 'chats',
                     where: { user_id: userId, is_deleted: false },
                     required: true,

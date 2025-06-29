@@ -2,8 +2,8 @@ const SuperDao = require('./SuperDao');
 const models = require('../models');
 const { Sequelize } = require('sequelize');
 
-const Call = models.call;
-const Assistant = models.assistant;
+const Call = models.vapi_call;
+const Assistant = models.vapi_assistant;
 const User = models.user;
 
 class CallDao extends SuperDao {
