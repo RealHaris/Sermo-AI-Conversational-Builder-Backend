@@ -34,12 +34,14 @@ const envValidation = Joi.object()
         REDIS_USE_PASSWORD: Joi.string().default('no'),
         REDIS_PASSWORD: Joi.string(),
         CNIC_ENCRYPTION_KEY: Joi.string().required().description('Secret key for CNIC encryption'),
-        VAPI_API_KEY: Joi.string().required().description('Vapi API key'),
+        VAPI_PRIVATE_KEY: Joi.string().required().description('Vapi API key'),
+        VAPI_PUBLIC_KEY: Joi.string().required().description('Vapi public key'),
         VAPI_BASE_URL: Joi.string().description('Optional custom Vapi API base URL'),
         VAPI_DEFAULT_MODEL: Joi.string().default('gpt-4').description('Default LLM model to use'),
         VAPI_DEFAULT_VOICE_PROVIDER: Joi.string().default('eleven_labs').description('Default voice provider'),
         VAPI_DEFAULT_VOICE_ID: Joi.string().default('rachel').description('Default voice ID to use'),
         VAPI_TEMPERATURE: Joi.number().default(0.7).description('Temperature for LLM responses'),
+        VAPI_WEBHOOK_SECRET: Joi.string().description('Vapi webhook secret'),
         CLOUDINARY_CLOUD_NAME: Joi.string().required().description('Cloudinary cloud name'),
         CLOUDINARY_API_KEY: Joi.string().required().description('Cloudinary API key'),
         CLOUDINARY_API_SECRET: Joi.string().required().description('Cloudinary API secret'),
@@ -85,12 +87,14 @@ module.exports = {
         cnicKey: envVar.CNIC_ENCRYPTION_KEY,
     },
     vapi: {
-        apiKey: envVar.VAPI_API_KEY,
+        privateKey: envVar.VAPI_PRIVATE_KEY,
+        publicKey: envVar.VAPI_PUBLIC_KEY,
         baseUrl: envVar.VAPI_BASE_URL,
         defaultModel: envVar.VAPI_DEFAULT_MODEL,
         defaultVoiceProvider: envVar.VAPI_DEFAULT_VOICE_PROVIDER,
         defaultVoiceId: envVar.VAPI_DEFAULT_VOICE_ID,
-        temperature: envVar.VAPI_TEMPERATURE
+        temperature: envVar.VAPI_TEMPERATURE,
+        webhookSecret: envVar.VAPI_WEBHOOK_SECRET
     },
     cloudinary: {
         cloudName: envVar.CLOUDINARY_CLOUD_NAME,

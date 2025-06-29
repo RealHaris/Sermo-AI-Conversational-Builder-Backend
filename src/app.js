@@ -5,7 +5,7 @@ const httpStatus = require('http-status');
 // const swaggerUi = require('swagger-ui-express');
 // const swaggerSpec = require('./config/swagger');
 const routes = require('./route');
-const { jwtStrategy } = require('./config/passport');
+// const { jwtStrategy } = require('./config/passport');
 const { errorConverter, errorHandler } = require('./middlewares/error');
 const ApiError = require('./helper/ApiError');
 
@@ -25,7 +25,7 @@ app.use(express.json({ limit: '10mb' }));
 
 // jwt authentication
 app.use(passport.initialize());
-passport.use('jwt', jwtStrategy);
+// passport.use('jwt', jwtStrategy);
 
 // Swagger documentation
 // app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
