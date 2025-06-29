@@ -103,9 +103,25 @@ class WebhookService {
      */
     async handleChatWebhook(webhookData) {
         try {
-            // Placeholder for chat webhook logic
-            logger.info('Chat webhook handled:', webhookData);
-            return { success: true };
+            const { chat, message } = webhookData;
+
+            if (!chat || !chat.id || !message) {
+                logger.warn('Invalid chat webhook data');
+                return { success: false, error: 'Invalid data' };
+            }
+
+            const chatService = new ChatService();
+            const result = await chatService.handleWebhookUpdate(chat.id, webhookData);
+
+            if (result.success) {
+                const socketService = require('./SocketService').getInstance();
+                socketService.sendMessage(result.chat.uuid, message);
+            }
+
+            return {
+                success: result.success,
+                ...(result.error && { error: result.error })
+            };
         } catch (error) {
             logger.error('Chat webhook handler failed:', error);
             return { success: false, error: error.message };

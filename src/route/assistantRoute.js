@@ -10,7 +10,7 @@ const assistantValidator = new AssistantValidator();
 router.get('/', assistantController.getAssistants);
 
 // Get assistant by id
-router.get('/:id', assistantValidator.validateUUID, assistantController.getAssistantById);
+router.get('/:id', assistantController.getAssistantById);
 
 // Create new assistant
 router.post('/', assistantValidator.assistantCreateValidator, assistantController.createAssistant);
@@ -20,14 +20,5 @@ router.put('/:id', assistantValidator.validateUUID, assistantValidator.assistant
 
 // Delete assistant
 router.delete('/:id', assistantValidator.validateUUID, assistantController.deleteAssistant);
-
-// Change assistant status
-router.patch('/:id/status', assistantValidator.validateUUID, assistantValidator.changeStatusValidator, assistantController.changeStatus);
-
-// Start chat with assistant
-router.post('/:id/chat', assistantValidator.validateUUID, assistantValidator.chatCreateValidator, assistantController.startChat);
-
-// Start voice call with assistant
-router.post('/:id/call', assistantValidator.validateUUID, assistantValidator.callCreateValidator, assistantController.startCall);
 
 module.exports = router;

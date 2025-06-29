@@ -8,11 +8,6 @@ module.exports = (sequelize, DataTypes) => {
          * The `models/index` file will call this method automatically.
          */
         static associate(models) {
-            VapiCall.belongsTo(models.vapi_assistant, {
-                foreignKey: 'assistant_id',
-                as: 'assistant'
-            });
-
             VapiCall.belongsTo(models.vapi_chat, {
                 foreignKey: 'chat_id',
                 as: 'chat'
@@ -32,10 +27,6 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.STRING(100),
                 allowNull: true,
                 unique: true
-            },
-            assistant_id: {
-                type: DataTypes.INTEGER,
-                allowNull: false
             },
             chat_id: {
                 type: DataTypes.INTEGER,

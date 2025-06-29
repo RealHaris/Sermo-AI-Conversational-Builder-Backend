@@ -2,7 +2,7 @@ const httpStatus = require('http-status');
 const { v4: uuidv4 } = require('uuid');
 const ChatDao = require('../dao/ChatDao');
 const MessageDao = require('../dao/MessageDao');
-const AssistantDao = require('../dao/AssistantDao');
+
 const responseHandler = require('../helper/responseHandler');
 const logger = require('../config/logger');
 const models = require('../models');
@@ -13,8 +13,6 @@ class ChatService {
     constructor() {
         this.chatDao = new ChatDao();
         this.messageDao = new MessageDao();
-        this.assistantDao = new AssistantDao();
-        this.vapiService = new VapiService();
         this.cloudinaryService = new CloudinaryService();
     }
 
@@ -29,18 +27,14 @@ class ChatService {
             let message = 'Chat created successfully!';
 
             // Validate assistant exists
-            const assistant = await this.assistantDao.findOneByWhere({ uuid: chatBody.assistant_id });
+            const assistant = await this.vapiService.getAssistant(chatBody.assistant_id);
             if (!assistant) {
                 return responseHandler.returnError(httpStatus.NOT_FOUND, 'Assistant not found');
             }
 
-            if (!assistant.vapi_assistant_id) {
-                return responseHandler.returnError(httpStatus.BAD_REQUEST, 'Assistant not configured for Vapi');
-            }
-
             const uuid = uuidv4();
             chatBody.uuid = uuid;
-            chatBody.assistant_id = assistant.id; // Use internal ID
+            chatBody.assistant_id = chatBody.assistant_id;
             chatBody.user_id = user?.id || null;
             chatBody.status = 'active';
             chatBody.message_count = 0;
@@ -48,8 +42,8 @@ class ChatService {
             try {
                 // Create chat in Vapi
                 const vapiChat = await this.vapiService.createChat({
-                    assistantId: assistant.vapi_assistant_id,
-                    message: chatBody.initial_message || 'Hello!'
+                    assistantId: assistant.id,
+                    message: chatBody.initial_message || 'Hello!',
                 });
 
                 chatBody.vapi_chat_id = vapiChat.id;
@@ -58,10 +52,6 @@ class ChatService {
                 // Start transaction
                 const result = await models.sequelize.transaction(async (transaction) => {
                     const chatData = await this.chatDao.createWithTransaction(chatBody, transaction);
-
-                    // Increment assistant chat count
-                    await this.assistantDao.incrementChatCount(assistant.id);
-
                     return chatData;
                 });
 
@@ -311,11 +301,6 @@ class ChatService {
                 );
             }
 
-            // Decrement assistant chat count
-            if (chat.assistant_id) {
-                await this.assistantDao.decrementChatCount(chat.assistant_id);
-            }
-
             return responseHandler.returnSuccess(
                 httpStatus.OK,
                 'Chat deleted successfully',
@@ -405,7 +390,7 @@ class ChatService {
      * @param {Object} user - Current user
      * @returns {Object}
      */
-    sendVoiceMessage = async (chatId, messageData, user) => {
+    sendVoiceMessage = async (chatId, messageData, user, file) => {
         try {
             const chat = await this.chatDao.findOneByWhere({ uuid: chatId });
 
@@ -423,15 +408,17 @@ class ChatService {
                 );
             }
 
-            // Assuming voice message has a similar structure to text message
+            // Upload audio to Cloudinary
+            const audioUrl = await this.cloudinaryService.uploadFile(file.path);
+
+            // Send message to Vapi with audio URL
             const messagePayload = {
                 role: 'user',
-                content: messageData.content,
-                type: 'voice'
+                content: messageData.content || '',
+                audio_url: audioUrl.url
             };
 
-            // Send to Vapi (Mock example)
-            const vapiResponse = await this.vapiService.sendVoiceMessage(chat.vapi_chat_id, messagePayload);
+            const vapiResponse = await this.vapiService.sendMessage(chat.vapi_chat_id, messagePayload);
 
             await this.chatDao.updateWhere(
                 {
@@ -534,6 +521,47 @@ class ChatService {
         } catch (e) {
             logger.error(e);
             return responseHandler.returnError(httpStatus.BAD_REQUEST, 'Something went wrong!');
+        }
+    };
+
+    /**
+     * Handle webhook chat updates
+     * @param {String} vapiChatId - Vapi chat ID
+     * @param {Object} webhookData - Webhook data
+     * @returns {Object}
+     */
+    handleWebhookUpdate = async (vapiChatId, webhookData) => {
+        try {
+            const chat = await this.chatDao.findByVapiChatId(vapiChatId);
+
+            if (!chat) {
+                logger.warn(`Chat not found for Vapi ID: ${vapiChatId}`);
+                return { success: false, error: 'Chat not found' };
+            }
+
+            const { message } = webhookData;
+
+            // Create a new message in the database
+            await this.messageDao.create({
+                chat_id: chat.id,
+                content: message.content,
+                role: message.role,
+                message_type: message.type || 'text',
+            });
+
+            // Update chat metadata
+            await this.chatDao.updateWhere(
+                {
+                    message_count: chat.message_count + 1,
+                    last_message_at: new Date(),
+                },
+                { id: chat.id }
+            );
+
+            return { success: true, chat };
+        } catch (error) {
+            logger.error('Webhook chat update failed:', error);
+            return { success: false, error: error.message };
         }
     };
 }

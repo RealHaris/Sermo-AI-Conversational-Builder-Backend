@@ -6,7 +6,7 @@ const router = express.Router();
 const callController = new CallController();
 const callValidator = new CallValidator();
 
-// Get all calls
+// // Get all calls
 router.get('/', callValidator.validateSearchQuery, callController.getCalls);
 
 // Get call by id

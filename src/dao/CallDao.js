@@ -69,12 +69,6 @@ class CallDao extends SuperDao {
                     attributes: ['id', 'uuid', 'name', 'description'],
                     required: false
                 },
-                {
-                    model: User,
-                    as: 'user',
-                    attributes: ['id', 'uuid', 'full_name', 'email'],
-                    required: false
-                }
             ],
             order: [['created_at', 'DESC']]
         });
@@ -93,13 +87,7 @@ class CallDao extends SuperDao {
                 {
                     model: Assistant,
                     as: 'assistant',
-                    attributes: ['id', 'uuid', 'name', 'description', 'vapi_assistant_id'],
-                    required: false
-                },
-                {
-                    model: User,
-                    as: 'user',
-                    attributes: ['id', 'uuid', 'full_name', 'email'],
+                    attributes: ['id', 'uuid', 'name', 'description'],
                     required: false
                 }
             ]
@@ -128,7 +116,7 @@ class CallDao extends SuperDao {
 
     async updateCallStatus(callId, status, additionalData = {}) {
         const updateData = { status, ...additionalData };
-        
+
         // Add timestamps based on status
         if (status === 'in-progress' && !additionalData.started_at) {
             updateData.started_at = new Date();
@@ -330,7 +318,7 @@ class CallDao extends SuperDao {
 
     async bulkUpdateStatus(callIds, status) {
         const updateData = { status };
-        
+
         // Add timestamps based on status
         if (status === 'ended') {
             updateData.ended_at = new Date();

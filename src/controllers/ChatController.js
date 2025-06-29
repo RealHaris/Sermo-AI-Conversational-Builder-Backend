@@ -146,7 +146,7 @@ class ChatController {
   sendVoiceMessage = async (req, res) => {
     try {
       const { id } = req.params;
-      const result = await this.chatService.sendVoiceMessage(id, req.body, req.user);
+      const result = await this.chatService.sendVoiceMessage(id, req.body, req.user, req.file);
       return res.status(result.statusCode).json(result.response);
     } catch (error) {
       return res.status(httpStatus.BAD_REQUEST).json({

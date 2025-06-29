@@ -93,13 +93,7 @@ class ChatDao extends SuperDao {
                 {
                     model: Assistant,
                     as: 'assistant',
-                    attributes: ['id', 'uuid', 'name', 'description', 'vapi_assistant_id'],
-                    required: false
-                },
-                {
-                    model: User,
-                    as: 'user',
-                    attributes: ['id', 'uuid', 'full_name', 'email'],
+                    attributes: ['id', 'uuid', 'name', 'description'],
                     required: false
                 }
             ]
@@ -172,7 +166,7 @@ class ChatDao extends SuperDao {
     }
 
     async getActiveChats(userId = null) {
-        const whereClause = { 
+        const whereClause = {
             status: 'active',
             is_deleted: false
         };
@@ -185,7 +179,7 @@ class ChatDao extends SuperDao {
     }
 
     async getArchivedChats(userId = null) {
-        const whereClause = { 
+        const whereClause = {
             status: 'archived',
             is_deleted: false
         };
@@ -208,7 +202,7 @@ class ChatDao extends SuperDao {
         ]);
 
         // Calculate chat duration (approximate based on first and last message)
-        const duration = chat.last_message_at && chat.createdAt ? 
+        const duration = chat.last_message_at && chat.createdAt ?
             Math.round((new Date(chat.last_message_at) - new Date(chat.createdAt)) / 1000) : 0;
 
         return {

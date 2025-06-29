@@ -1,7 +1,7 @@
 const httpStatus = require('http-status');
 const { v4: uuidv4 } = require('uuid');
 const CallDao = require('../dao/CallDao');
-const AssistantDao = require('../dao/AssistantDao');
+// 
 const ChatDao = require('../dao/ChatDao');
 const responseHandler = require('../helper/responseHandler');
 const logger = require('../config/logger');
@@ -13,10 +13,7 @@ const config = require('../config/config');
 class CallService {
     constructor() {
         this.callDao = new CallDao();
-        this.assistantDao = new AssistantDao();
         this.chatDao = new ChatDao();
-        this.vapiService = new VapiService();
-        this.cloudinaryService = new CloudinaryService();
     }
 
     /**
@@ -30,18 +27,14 @@ class CallService {
             let message = 'Call created successfully!';
 
             // Validate assistant exists
-            const assistant = await this.assistantDao.findOneByWhere({ uuid: callBody.assistant_id });
+            const assistant = await this.vapiService.getAssistant(callBody.assistant_id);
             if (!assistant) {
                 return responseHandler.returnError(httpStatus.NOT_FOUND, 'Assistant not found');
             }
 
-            if (!assistant.vapi_assistant_id) {
-                return responseHandler.returnError(httpStatus.BAD_REQUEST, 'Assistant not configured for Vapi');
-            }
-
             const uuid = uuidv4();
             callBody.uuid = uuid;
-            callBody.assistant_id = assistant.id; // Use internal ID
+            callBody.assistant_id = callBody.assistant_id;
             callBody.user_id = user?.id || null;
             callBody.status = 'queued';
             callBody.direction = callBody.direction || 'outbound';
@@ -50,8 +43,8 @@ class CallService {
                 // Create call in Vapi
                 const vapiCall = await this.vapiService.createCall({
                     type: callBody.type || 'webCall',
-                    assistantId: assistant.vapi_assistant_id,
-                    customer: callBody.customer || {}
+                    assistantId: assistant.id,
+                    customer: callBody.customer || {},
                 });
 
                 callBody.vapi_call_id = vapiCall.id;
@@ -59,10 +52,6 @@ class CallService {
                 // Start transaction
                 const result = await models.sequelize.transaction(async (transaction) => {
                     const callData = await this.callDao.createWithTransaction(callBody, transaction);
-
-                    // Increment assistant call count
-                    await this.assistantDao.incrementCallCount(assistant.id);
-
                     return callData;
                 });
 
@@ -324,11 +313,6 @@ class CallService {
                     httpStatus.BAD_REQUEST,
                     'Failed to delete call'
                 );
-            }
-
-            // Decrement assistant call count
-            if (call.assistant_id) {
-                await this.assistantDao.decrementCallCount(call.assistant_id);
             }
 
             return responseHandler.returnSuccess(

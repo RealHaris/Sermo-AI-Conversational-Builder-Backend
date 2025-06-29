@@ -1,0 +1,56 @@
+sequenceDiagram
+    participant Frontend
+    participant Backend
+    participant Vapi
+    participant "Your DB"
+
+    title Chat Flow
+
+    Frontend->>Backend: POST /api/chats (assistantId)
+    Backend->>Vapi: Create Chat
+    Vapi-->>Backend: vapi_chat_id
+    Backend->>Your DB: Store new Chat (uuid, vapi_chat_id)
+    Backend-->>Frontend: { chatId: uuid }
+
+    alt Text Message
+        Frontend->>Backend: POST /api/chats/{chatId}/message (content)
+        Backend->>Vapi: Forward Message
+        Vapi-->>Backend: Message Response
+        Backend->>Your DB: Store Message (content, role)
+        Backend-->>Frontend: { success: true } (WebSocket pushes update)
+    end
+
+    alt Voice Message
+        Frontend->>Backend: (Upload audio file to your storage) -> audio_url
+        Frontend->>Backend: POST /api/chats/{chatId}/voice-message (audio_url)
+        Backend->>Vapi: Send message with audio_url
+        Vapi-->>Backend: Message Response (with transcript)
+        Backend->>Your DB: Store Message (transcript, role, audio_url)
+        Backend-->>Frontend: { success: true } (WebSocket pushes update)
+    end
+
+    Vapi->>Backend: Webhook: New Message (content, role)
+    Backend->>Your DB: Store Message (content, role)
+    Backend->>Frontend: Push Message via WebSocket (to relevant chatId room)
+
+    title Call Flow
+
+    Frontend->>Backend: POST /api/calls (assistantId)
+    Backend->>Vapi: Create Call
+    Vapi-->>Backend: vapi_call_id
+    Backend->>Your DB: Store new Call (uuid, vapi_call_id, status='queued')
+    Backend-->>Frontend: { callId: uuid, vapi_public_key }
+
+    Frontend->>Vapi: Start Call (with Vapi SDK using public key)
+    
+    Vapi->>Backend: Webhook: Call Started
+    Backend->>Your DB: Update Call (status='in-progress')
+    Backend->>Frontend: Push Call Status via WebSocket
+
+    Vapi->>Backend: Webhook: Call Ended
+    Backend->>Your DB: Update Call (status='ended')
+    Backend->>Frontend: Push Call Status via WebSocket
+
+    Vapi->>Backend: Webhook: End of Call Report (transcript, recordingUrl)
+    Backend->>Your DB: Update Call (transcript, recording_url)
+    Backend->>Frontend: Push Transcript & Recording URL via WebSocket
