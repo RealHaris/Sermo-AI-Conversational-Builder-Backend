@@ -399,6 +399,67 @@ class ChatService {
     };
 
     /**
+     * Send voice message to chat
+     * @param {String} chatId - Chat's UUID
+     * @param {Object} messageData - Message data
+     * @param {Object} user - Current user
+     * @returns {Object}
+     */
+    sendVoiceMessage = async (chatId, messageData, user) => {
+        try {
+            const chat = await this.chatDao.findOneByWhere({ uuid: chatId });
+
+            if (!chat) {
+                return responseHandler.returnError(
+                    httpStatus.NOT_FOUND,
+                    'Chat not found'
+                );
+            }
+
+            if (!chat.vapi_chat_id) {
+                return responseHandler.returnError(
+                    httpStatus.BAD_REQUEST,
+                    'Chat not configured for Vapi'
+                );
+            }
+
+            // Assuming voice message has a similar structure to text message
+            const messagePayload = {
+                role: 'user',
+                content: messageData.content,
+                type: 'voice'
+            };
+
+            // Send to Vapi (Mock example)
+            const vapiResponse = await this.vapiService.sendVoiceMessage(chat.vapi_chat_id, messagePayload);
+
+            await this.chatDao.updateWhere(
+                {
+                    message_count: chat.message_count + 1,
+                    last_message_at: new Date()
+                },
+                { uuid: chatId }
+            );
+
+            return responseHandler.returnSuccess(
+                httpStatus.OK,
+                'Voice message sent successfully',
+                {
+                    message: vapiResponse,
+                    chat_id: chatId
+                }
+            );
+
+        } catch (error) {
+            logger.error('Voice message sending failed:', error);
+            return responseHandler.returnError(
+                httpStatus.BAD_REQUEST,
+                'Failed to send voice message: ' + (error.message || 'Unknown error')
+            );
+        }
+    };
+
+    /**
      * Get chat analytics
      * @param {String} id - Chat's UUID
      * @param {Object} user - Current user

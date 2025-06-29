@@ -138,6 +138,25 @@ class ChatController {
   };
 
   /**
+   * Send voice message to chat
+   * @param {Object} req
+   * @param {Object} res
+   * @returns {Promise<Object>}
+   */
+  sendVoiceMessage = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = await this.chatService.sendVoiceMessage(id, req.body, req.user);
+      return res.status(result.statusCode).json(result.response);
+    } catch (error) {
+      return res.status(httpStatus.BAD_REQUEST).json({
+        code: httpStatus.BAD_REQUEST,
+        message: error.message,
+      });
+    }
+  };
+
+  /**
    * Get chat analytics
    * @param {Object} req
    * @param {Object} res

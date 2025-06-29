@@ -8,7 +8,7 @@ const logger = require('../config/logger');
 const models = require('../models');
 const VapiService = require('./VapiService');
 const CloudinaryService = require('./CloudinaryService');
-const config = require('../config');
+const config = require('../config/config');
 
 class CallService {
     constructor() {

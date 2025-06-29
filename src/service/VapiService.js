@@ -228,6 +228,23 @@ class VapiService {
     }
 
     /**
+     * Send voice message to chat
+     * @param {String} chatId
+     * @param {Object} message
+     * @returns {Object}
+     */
+    async sendVoiceMessage(chatId, message) {
+        try {
+            const response = await this.client.post(`/chat/${chatId}/voice-message`, message);
+            logger.info(`Voice message sent to Vapi chat: ${chatId}`);
+            return response.data;
+        } catch (error) {
+            logger.error(`Failed to send voice message to Vapi chat ${chatId}:`, error.response?.data || error.message);
+            throw new Error(`Vapi send voice message failed: ${error.response?.data?.message || error.message}`);
+        }
+    }
+
+    /**
      * Send background message to chat (for voice message context)
      * @param {String} chatId
      * @param {Object} message
